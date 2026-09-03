@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-# Builds MLX and mlx-c into the four files a Rust build links, and says
-# what it made. Runs the same way on a workstation and on CI; the workflow
-# beside it adds only the Metal toolchain and the release.
+# Builds MLX and mlx-c, and installs them as one prefix that says what it
+# holds. Runs the same way on a workstation and on CI; the workflow beside
+# it adds only the Metal toolchain and the release.
+#
+# The prefix answers two questions at once. `mlx/lib/` holds the four
+# files a Rust build links, which is what `MLX_PREBUILT_PATH` wants. The
+# tree `mlx/` is what `find_package(MLX)` looks for, which is how a
+# consumer builds mlx-c against an MLX it did not compile
+# (`MLX_C_USE_SYSTEM_MLX`). One copy of the bytes, either way in.
+#
+# Under `mlx/` rather than at the root because `lib` is cmake's name for
+# it (GNUInstallDirs), and a bare `lib/` at the top of an archive reads
+# like somebody else's `lib` to whoever unpacks it. Renaming it is not an
+# option: the exported package bakes the path in, so a directory moved
+# afterwards is a package `find_package` can no longer follow.
 #
 # Metal is not optional here. MLX probes the Metal compiler fatally when
 # configuring with MLX_BUILD_METAL=ON, and its library target depends on a
@@ -38,18 +50,28 @@ cmake -S "$work/mlx-c" -B "$work/build" \
   -DMLX_BUILD_PYTHON_BINDINGS=OFF
 cmake --build "$work/build" -j "$(sysctl -n hw.ncpu)"
 
-# Found rather than named: the layout under _deps is CMake's, and it has
-# moved before. A missing file is a failure here rather than a surprise in
-# whatever links this.
-mkdir -p "$OUT"
+# Installed rather than gathered: both projects have install rules, and
+# what they write is a prefix another build can find. MLX puts its archive
+# and its metallib in lib/, mlx-c puts its archive there too, and both
+# export a CMake package into share/cmake. So one tree answers two
+# questions: `lib/` holds the four files a Rust build links, and the tree
+# itself is what `find_package(MLX)` looks for when a consumer would
+# rather not compile MLX at all (mlx-c's MLX_C_USE_SYSTEM_MLX).
+PREFIX="$OUT/mlx"
+mkdir -p "$PREFIX"
+cmake --install "$work/build" --prefix "$PREFIX"
+
+# Except gguflib, which MLX vendors and does not install, and which its
+# GGUF support needs at link time.
+gguf="$(find "$work/build" -name libgguflib.a -type f | head -1)"
+[ -n "$gguf" ] && cp "$gguf" "$PREFIX/lib/"
+
 for name in "${WANTED[@]}"; do
-  found="$(find "$work/build" -name "$name" -type f | head -1)"
-  if [ -z "$found" ]; then
-    echo "!! $name was not built. The tree holds:" >&2
-    find "$work/build" \( -name '*.a' -o -name '*.metallib' \) >&2
+  if [ ! -f "$PREFIX/lib/$name" ]; then
+    echo "!! $name is not in the install tree. mlx/lib/ holds:" >&2
+    ls -l "$PREFIX/lib" >&2
     exit 1
   fi
-  cp "$found" "$OUT/$name"
 done
 
 # The licences of what was built, taken from the sources that were built
@@ -74,5 +96,6 @@ macos    $(sw_vers -productVersion)
 xcode    $(xcodebuild -version | head -1)
 EOF
 cat "$OUT/MANIFEST.txt"
-(cd "$OUT" && shasum -a 256 "${WANTED[@]}" | tee SHA256SUMS)
-ls "$OUT"
+(cd "$PREFIX/lib" && shasum -a 256 "${WANTED[@]}" | tee "$OUT/SHA256SUMS")
+echo "==> what was made, headers aside:"
+find "$OUT" -maxdepth 3 -not -path "*/include/*" | sort

@@ -15,12 +15,31 @@ channel belonging to whoever depends on it.
 
 ## The archive
 
+An install prefix, not a bag of files:
+
 ```
-libmlx.a  libmlxc.a  libgguflib.a  mlx.metallib   what mlx-sys links
-LICENSE.mlx  LICENSE.mlx-c                        taken from the sources built
-MANIFEST.txt                                      versions, date, macOS, Xcode
-SHA256SUMS                                        of the four
+mlx/lib/      libmlx.a libmlxc.a libgguflib.a mlx.metallib
+mlx/include/  MLX's and mlx-c's headers
+mlx/share/    cmake/MLX and cmake/MLXC, the exported packages
+LICENSE.mlx  LICENSE.mlx-c   taken from the sources that were built
+MANIFEST.txt                 versions, date, macOS, Xcode
+SHA256SUMS                   of the four in mlx/lib/
 ```
+
+That serves both ways of consuming it, from one copy of the bytes:
+
+- **`mlx/lib/` is a `MLX_PREBUILT_PATH`**, which is what a Rust build
+  wants when its bindings are already generated.
+- **`mlx/` is a `CMAKE_PREFIX_PATH`**, so `find_package(MLX)` finds it.
+  That is how mlx-c's `MLX_C_USE_SYSTEM_MLX` builds against an MLX it did
+  not compile, which is what lets a machine with no Metal toolchain use
+  the published `mlx-rs` from crates.io rather than a fork.
+
+The prefix is nested rather than unpacked at the root because `lib` is
+cmake's name for that directory and a bare `lib/` at the top of an
+archive reads like somebody else's. Renaming it is not on offer: the
+exported package records paths relative to the prefix, so a directory
+moved after the install is one `find_package` can no longer follow.
 
 Its own SHA-256 is published beside it. Record that digest and refuse
 anything else: a release asset can be replaced without the URL changing.
