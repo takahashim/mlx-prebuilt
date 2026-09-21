@@ -13,7 +13,7 @@ on:
     inputs:
       mlx_c_ref:
         description: "mlx-c tag or commit to build (it pins the MLX)"
-        default: "v0.4.1"
+        default: "c74db5307cc8ce122f48d97ef951b30578674e7f"
 
 permissions:
   contents: write
@@ -37,7 +37,7 @@ jobs:
 
       - name: Build
         env:
-          MLX_C_REF: ${{ github.event.inputs.mlx_c_ref || 'v0.4.1' }}
+          MLX_C_REF: ${{ github.event.inputs.mlx_c_ref || 'c74db5307cc8ce122f48d97ef951b30578674e7f' }}
         run: ./build.sh
 
       - name: Name the archive after what is in it
