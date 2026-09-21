@@ -26,7 +26,7 @@ set -euo pipefail
 # bindings generated from mlx-c's headers. The pair has to be the pair the
 # consumer expects, or the headers describe one library and the archive is
 # another.
-MLX_C_REF="${MLX_C_REF:-v0.4.1}"
+MLX_C_REF="${MLX_C_REF:-c74db5307cc8ce122f48d97ef951b30578674e7f}"
 OUT="${OUT:-$PWD/dist}"
 
 WANTED=(libmlx.a libmlxc.a libgguflib.a mlx.metallib)
@@ -34,8 +34,11 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
 echo "==> mlx-c ${MLX_C_REF}"
-git clone --quiet --depth 1 --branch "${MLX_C_REF}" \
-  https://github.com/ml-explore/mlx-c.git "$work/mlx-c"
+git init --quiet "$work/mlx-c"
+git -C "$work/mlx-c" remote add origin https://github.com/ml-explore/mlx-c.git
+git -C "$work/mlx-c" fetch --quiet --depth 1 origin "${MLX_C_REF}"
+git -C "$work/mlx-c" checkout --quiet FETCH_HEAD
+
 mlx_tag="$(grep -A 3 'FetchContent_Declare' "$work/mlx-c/CMakeLists.txt" |
   grep 'GIT_TAG' | head -1 | tr -d ' )' | cut -d' ' -f2 | sed 's/GIT_TAG//')"
 echo "==> which pins MLX ${mlx_tag}"
