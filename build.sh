@@ -170,18 +170,37 @@ cp "$mlx_src/LICENSE" "$OUT/LICENSE.mlx"
 
 # The headers installed above are NVIDIA's, not MLX's, and shipping them
 # carries their notices too: CCCL is Apache-2.0 with the LLVM exception,
-# CUTLASS is BSD-3-Clause. Taken from what was fetched, for the same
-# reason the two above are.
+# CUTLASS is BSD-3-Clause.
+#
+# CUTLASS is cloned, so its LICENSE.txt arrives with it. CCCL is not: MLX
+# fetches a release zip, and that zip contains `include/` and `lib/` and
+# no licence text at all - only an SPDX line at the top of every header.
+# Apache-2.0 asks for a copy of the licence to travel with what it covers,
+# so it is fetched from the tag the zip was cut from, which MLX's own
+# CMakeLists is what names.
 for name in ${HEADERS[@]+"${HEADERS[@]}"}; do
   [ "$name" = "cute" ] && continue # cute ships inside CUTLASS
-  src="$(find "$work/build/_deps" -maxdepth 1 -type d -name "${name}-src" | head -1)"
-  licence="$(find "${src:-/nonexistent}" -maxdepth 1 -iname 'LICENSE*' | head -1)"
-  if [ -z "$licence" ]; then
-    echo "!! no licence found for the ${name} headers this archive ships;" >&2
-    echo "   it may not be redistributed without one" >&2
+  src="$work/build/_deps/${name}-src"
+  licence="$(find "$src" -maxdepth 1 -iname 'LICENSE*' 2> /dev/null | head -1)"
+
+  if [ -n "$licence" ]; then
+    cp "$licence" "$OUT/LICENSE.${name}"
+  elif [ "$name" = cccl ]; then
+    tag="$(grep -o 'cccl/releases/download/[^/]*' \
+      "$mlx_src/mlx/backend/cuda/CMakeLists.txt" | head -1 | sed 's|.*/||')"
+    if [ -z "$tag" ]; then
+      echo "!! cannot tell which CCCL this is, so cannot fetch its licence" >&2
+      exit 1
+    fi
+    echo "==> CCCL ${tag} ships no licence; fetching it from the tag"
+    curl -sSfL -o "$OUT/LICENSE.cccl" \
+      "https://raw.githubusercontent.com/NVIDIA/cccl/${tag}/LICENSE"
+  else
+    echo "!! no licence found for the ${name} headers this archive ships," >&2
+    echo "   and none in ${src}; it may not be redistributed without one" >&2
+    ls "$src" >&2 2> /dev/null || echo "   (that directory does not exist)" >&2
     exit 1
   fi
-  cp "$licence" "$OUT/LICENSE.${name}"
 done
 
 # What is in it, beside it. A consumer that pins the digest still wants to
