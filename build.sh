@@ -102,10 +102,18 @@ mlx_tag="$(grep -A 3 'FetchContent_Declare' "$work/mlx-c/CMakeLists.txt" |
   grep 'GIT_TAG' | head -1 | tr -d ' )' | cut -d' ' -f2 | sed 's/GIT_TAG//')"
 echo "==> which pins MLX ${mlx_tag}"
 
+# `MLX_C_BUILD_EXAMPLES` is mlx-c's own and defaults to ON, which is a
+# different option from MLX's `MLX_BUILD_EXAMPLES` below and was the one
+# that mattered: the examples are the only thing here that *links* rather
+# than archives, and a static MLX built for CUDA does not hand its
+# consumers `-lcudart`, so they failed with a wall of undefined references
+# to `cudaPeekAtLastError` after both libraries had built cleanly. The
+# archive has no use for them on either platform.
 cmake -S "$work/mlx-c" -B "$work/build" \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_SHARED_LIBS=OFF \
   "${BACKEND[@]}" \
+  -DMLX_C_BUILD_EXAMPLES=OFF \
   -DMLX_BUILD_TESTS=OFF \
   -DMLX_BUILD_EXAMPLES=OFF \
   -DMLX_BUILD_BENCHMARKS=OFF \

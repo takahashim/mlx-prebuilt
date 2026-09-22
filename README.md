@@ -95,10 +95,12 @@ both archives to a release when a tag is pushed. It can also be run by
 hand, which builds and keeps the archives as artifacts without releasing
 anything.
 
-**The Linux half has never run.** The first dispatch is what establishes
-that the toolkit installs on the image, that the image has room for it,
-that a static MLX comes out of a CUDA build at all, and that the JIT
-headers land where `build.sh` looks for them.
+The first Linux dispatch settled most of what was unknown: the toolkit
+installs, the image has room, a static `libmlx.a` does come out of a CUDA
+build, and CUTLASS compiles. It took about 24 minutes for one
+architecture. What it caught was mlx-c's examples, which are the only
+thing here that links rather than archives and which a static CUDA MLX
+does not hand `-lcudart`; they are off now.
 
 ## Licences
 
