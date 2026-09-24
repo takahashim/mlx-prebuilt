@@ -104,12 +104,32 @@ jobs:
           echo "name=$name" >> "$GITHUB_OUTPUT"
           shasum -a 256 "$name.tar.gz" | tee "$name.tar.gz.sha256"
 
+          # The Metal kernels on their own, for a consumer that ships the
+          # libraries but fetches only this at run time. Metal alone: CUDA
+          # compiles its kernels at run time and has no metallib. The name
+          # keeps the generation the archive's name carries, so the two
+          # read as parts of one build.
+          if [ -f "$name/mlx/lib/mlx.metallib" ]; then
+            runtime="${name}.metallib.tar.gz"
+            tar -czf "$runtime" -C "$name/mlx/lib" mlx.metallib
+            shasum -a 256 "$runtime" | tee "$runtime.sha256"
+            echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.pack.outputs.name }}
           path: |
             ${{ steps.pack.outputs.name }}.tar.gz
             ${{ steps.pack.outputs.name }}.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        if: steps.pack.outputs.runtime != ''
+        with:
+          name: ${{ steps.pack.outputs.runtime }}
+          path: |
+            ${{ steps.pack.outputs.runtime }}
+            ${{ steps.pack.outputs.runtime }}.sha256
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -119,4 +139,13 @@ jobs:
             ${{ steps.pack.outputs.name }}.tar.gz
             ${{ steps.pack.outputs.name }}.tar.gz.sha256
           body_path: ${{ steps.pack.outputs.name }}/MANIFEST.txt
+          fail_on_unmatched_files: true
+
+      - name: Release the kernels on their own
+        if: startsWith(github.ref, 'refs/tags/') && steps.pack.outputs.runtime != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.pack.outputs.runtime }}
+            ${{ steps.pack.outputs.runtime }}.sha256
           fail_on_unmatched_files: true
