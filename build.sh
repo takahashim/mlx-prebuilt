@@ -161,24 +161,29 @@ done
 # compiled, and MIT asks whoever passes that on to carry the notice.
 # Copying them at build time means the notice always belongs to the version
 # in the box.
+# Found by the licence file rather than by the directory it sits in. An
+# out-of-tree source leaves an object-only mirror of its name under
+# CMakeFiles, and a search by name can land on that one, which holds the
+# objects and not the licence.
 cp "$work/mlx-c/LICENSE" "$OUT/LICENSE.mlx-c"
-mlx_src="$(find "$work/build" -type d -name 'mlx-src' | head -1)"
-if [ -z "$mlx_src" ] || [ ! -f "$mlx_src/LICENSE" ]; then
+mlx_license="$(find "$work/build" -type f -path '*/mlx-src/LICENSE' -print -quit)"
+if [ -z "$mlx_license" ]; then
   echo "!! MLX's LICENSE was not found; the archive may not be redistributed without it" >&2
   exit 1
 fi
-cp "$mlx_src/LICENSE" "$OUT/LICENSE.mlx"
+cp "$mlx_license" "$OUT/LICENSE.mlx"
+mlx_src="${mlx_license%/LICENSE}"
 
 # gguflib is vendored by MLX and, unlike MLX and mlx-c, does not install:
 # its archive is copied out of the build tree above, so its notice has to be
 # copied out too. MLX fetches it from antirez/gguf-tools, whose root LICENSE
 # is the MIT notice.
-gguf_src="$(find "$work/build" -type d -name 'gguflib-src' | head -1)"
-if [ -z "$gguf_src" ] || [ ! -f "$gguf_src/LICENSE" ]; then
+gguf_license="$(find "$work/build" -type f -path '*/gguflib-src/LICENSE' -print -quit)"
+if [ -z "$gguf_license" ]; then
   echo "!! gguflib's LICENSE was not found; the archive may not be redistributed without it" >&2
   exit 1
 fi
-cp "$gguf_src/LICENSE" "$OUT/LICENSE.gguflib"
+cp "$gguf_license" "$OUT/LICENSE.gguflib"
 
 # The headers installed above are NVIDIA's, not MLX's, and shipping them
 # carries their notices too: CCCL is Apache-2.0 with the LLVM exception,
