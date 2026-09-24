@@ -23,7 +23,7 @@ One per platform, each an install prefix rather than a bag of files:
 mlx/lib/      libmlx.a libmlxc.a libgguflib.a   and, on macOS, mlx.metallib
 mlx/include/  MLX's and mlx-c's headers
 mlx/share/    cmake/MLX and cmake/MLXC, the exported packages
-LICENSE.mlx  LICENSE.mlx-c   taken from the sources that were built
+LICENSE.mlx  LICENSE.mlx-c  LICENSE.gguflib  taken from the sources that were built
 MANIFEST.txt                 versions, platform, date, and the toolchain
 SHA256SUMS                   of the libraries in mlx/lib/
 ```
@@ -107,8 +107,9 @@ does not hand `-lcudart`; they are off now.
 `build.sh` and the workflow are MIT (LICENSE). They are the only original
 work here.
 
-The archives are MLX and mlx-c compiled, both MIT, copyright ml-explore
-and Apple. The CUDA one also ships NVIDIA's CCCL (Apache-2.0 with the
-LLVM exception) and CUTLASS (BSD-3-Clause) headers. Every licence text is
-copied out of the sources at build time and ships inside the archive, so
-what is distributed carries its own notices.
+The archives are MLX, mlx-c and gguflib compiled. MLX and mlx-c are MIT,
+copyright ml-explore and Apple; gguflib is MIT, copyright Salvatore
+Sanfilippo, and MLX vendors it. The CUDA one also ships NVIDIA's CCCL
+(Apache-2.0 with the LLVM exception) and CUTLASS (BSD-3-Clause) headers.
+Every licence text is copied out of the sources at build time and ships
+inside the archive, so what is distributed carries its own notices.
