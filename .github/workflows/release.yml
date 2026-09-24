@@ -116,14 +116,14 @@ jobs:
             echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.pack.outputs.name }}
           path: |
             ${{ steps.pack.outputs.name }}.tar.gz
             ${{ steps.pack.outputs.name }}.tar.gz.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: steps.pack.outputs.runtime != ''
         with:
           name: ${{ steps.pack.outputs.runtime }}
